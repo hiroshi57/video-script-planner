@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>動画構成プランナー — 秒単位の構成表を作る</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+<style>
+body{font-family:system-ui,sans-serif;background:#f5f6f8;margin:0;padding:24px;color:#1a1a2e}
+.wrap{max-width:920px;margin:0 auto} h1{font-size:23px;color:#c05621;margin-bottom:4px}
+h2{font-size:17px;margin:2px 0 8px} h3{font-size:14px;margin:12px 0 4px} .sub{color:#8a8f9c;font-size:12px}
+.card{background:#fff;border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stepbadge{display:inline-block;background:#c05621;color:#fff;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:bold;margin-bottom:8px}
+.intro{background:#fdf1e9;border-radius:12px;padding:16px;font-size:14px;line-height:1.9}
+.intro .q{font-weight:bold;color:#c05621;font-size:15px;margin-top:12px}
+.intro .q:first-child{margin-top:0}
+.guide{background:#fffbeb;border:2px dashed #f0c86a;border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.8;color:#7a5b00}
+.guide b{color:#5c4400}
+table{border-collapse:collapse;width:100%;font-size:13.5px} th,td{border:1px solid #dde;padding:8px 6px;text-align:center} th{background:#fdf1e9;font-size:12.5px}
+td.l,th.l{text-align:left} tbody tr:nth-child(even){background:#fafbfd}
+td input,td select{border:1.5px solid #b9cbe4;border-radius:6px;padding:6px;font-size:14px}
+td input{width:78px;text-align:right} td input.nm{width:150px;text-align:left} td select{background:#fff}
+input.big,textarea{width:100%;border:1.5px solid #b9cbe4;border-radius:8px;padding:10px;font-size:14px;font-family:inherit}
+textarea{min-height:130px;line-height:1.7}
+.metrics{display:flex;gap:12px;flex-wrap:wrap} .metric{flex:1;min-width:145px;background:#fdf1e9;border-radius:10px;padding:14px;text-align:center}
+.metric .val{font-size:25px;font-weight:bold;color:#c05621} .metric .l{font-size:12px;color:#556;margin-top:4px;line-height:1.5}
+.verdict{border-radius:12px;padding:18px;margin:10px 0}
+.vgood{background:#e7f7ef;border:2px solid #17a673} .vmid{background:#fff8e6;border:2px solid #f0a500} .vbad{background:#fdeeee;border:2px solid #e0533b}
+.verdict .big{font-size:20px;font-weight:bold} .verdict .desc{font-size:14px;line-height:1.9;margin-top:8px}
+.todo{background:#fdf1e9;border:1px solid #d6e4f7;border-radius:10px;padding:14px;margin-top:10px}
+.todo li{margin:9px 0;line-height:1.8;font-size:14px}
+.chk{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #eef1f5;font-size:14px;line-height:1.7}
+.chk .mark{font-size:18px;flex-shrink:0;width:24px}
+button{border:0;border-radius:9px;cursor:pointer;font-size:14px;padding:10px 16px}
+button.go{background:#c05621;color:#fff;font-size:15px} button.add{background:#c05621;color:#fff;margin-top:10px}
+button.ghost{background:#eef2f8;color:#c05621;margin-left:8px;font-size:13px;padding:9px 14px}
+button.del{background:#f7e4e4;color:#c0392b;padding:4px 10px;font-size:15px}
+.src{background:#f7f9fb;border:1px solid #e0e6ec;border-left:4px solid #8a8f9c;border-radius:8px;padding:12px;font-size:13px;color:#445;line-height:1.9;margin:10px 0}
+.src b{color:#1a1a2e} .src div{margin:4px 0}
+.note{color:#8a8f9c;font-size:12px;line-height:1.7}
+.bar{background:#eef1f5;border-radius:7px;height:28px;overflow:hidden;margin:5px 0}
+.bar>div{height:28px;border-radius:7px;display:flex;align-items:center;justify-content:flex-end;padding-right:9px;color:#fff;font-size:13px;font-weight:bold}
+.pill{padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:bold;white-space:nowrap}
+pre{background:#f7f9fb;border:1px solid #e0e6ec;border-radius:8px;padding:12px;overflow-x:auto;font-size:12.5px;line-height:1.6}
+@media(max-width:640px){body{padding:12px} .wrap{max-width:100%} h1{font-size:19px}
+ table{display:block;overflow-x:auto;white-space:nowrap;font-size:12.5px} .metrics{flex-direction:column}}
+</style>
+</head>
+<body>
+<div style="max-width:900px;margin:0 auto 4px;background:#fff8e1;border:1px solid #f0d98a;border-radius:10px;padding:10px 14px;font:13.5px system-ui;color:#7a5b00">🔬 <b>入力するだけで計算します</b>：動画の<b>目的・出す場所・長さ</b>を入れると、秒単位の構成表と作り方のポイントを出します。　AIサービスへの接続は不要で、計算はすべてこの画面の中で行われます。</div>
+<div id="root"></div>
+<script type="text/plain" id="__jsx">
+// ===== 自動保存 & データ書き出し/読み込み =====
+const STORE="vscript_v1";
+function usePersist(name,initial){
+  const [v,setV]=React.useState(function(){
+    try{var s=localStorage.getItem(STORE+":"+name);return s?JSON.parse(s):initial;}catch(e){return initial;}
+  });
+  React.useEffect(function(){try{localStorage.setItem(STORE+":"+name,JSON.stringify(v));}catch(e){}},[name,v]);
+  return [v,setV];
+}
+function collectAll(){var o={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);
+  if(k&&k.indexOf(STORE+":")===0){try{o[k.slice(STORE.length+1)]=JSON.parse(localStorage.getItem(k));}catch(e){}}}return o;}
+function DataBar(){
+  const [msg,setMsg]=React.useState(""); const fileRef=React.useRef(null);
+  const save=function(){try{
+      var blob=new Blob([JSON.stringify({_tool:STORE,_savedAt:new Date().toISOString(),data:collectAll()},null,2)],{type:"application/json"});
+      var a=document.createElement("a");a.href=URL.createObjectURL(blob);
+      a.download=STORE+"_"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(a.href);
+      setMsg("書き出しました");setTimeout(function(){setMsg("");},2500);}catch(e){setMsg("書き出しに失敗しました");}};
+  const load=function(e){var f=e.target.files&&e.target.files[0];if(!f)return;var rd=new FileReader();
+    rd.onload=function(){try{var j=JSON.parse(rd.result);if(!j||!j.data)throw new Error("形式が違います");
+      Object.keys(j.data).forEach(function(k){localStorage.setItem(STORE+":"+k,JSON.stringify(j.data[k]));});
+      location.reload();}catch(err){setMsg("読み込めませんでした");}};rd.readAsText(f);};
+  const clear=function(){if(!confirm("入力した内容をすべて消して最初の状態に戻します。よろしいですか？"))return;
+    var del=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf(STORE+":")===0)del.push(k);}
+    del.forEach(function(k){localStorage.removeItem(k);});location.reload();};
+  return (<div style={{background:"#f2f7f4",border:"1px solid #cfe3d8",borderRadius:10,padding:"9px 12px",
+      margin:"0 0 12px",fontSize:13,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",color:"#0f5c3f"}}>
+    <span>💾 <b>入力した内容はこの端末に自動保存されます</b>（閉じても消えません）</span>
+    <span style={{flex:1}}></span>
+    <button onClick={save} style={{border:0,borderRadius:7,background:"#17a673",color:"#fff",padding:"6px 11px",cursor:"pointer",fontSize:12.5}}>データを書き出す</button>
+    <button onClick={function(){fileRef.current&&fileRef.current.click();}} style={{border:0,borderRadius:7,background:"#e7f0eb",color:"#0f5c3f",padding:"6px 11px",cursor:"pointer",fontSize:12.5}}>読み込む</button>
+    <button onClick={clear} style={{border:0,borderRadius:7,background:"#f7e4e4",color:"#c0392b",padding:"6px 11px",cursor:"pointer",fontSize:12.5}}>最初に戻す</button>
+    <input ref={fileRef} type="file" accept="application/json" onChange={load} style={{display:"none"}}/>
+    {msg && <span style={{fontWeight:"bold"}}>{msg}</span>}
+  </div>);
+}
+function Intro(){
+  return (<div className="card"><div className="intro">
+    <div className="q">🎯 このツールで分かること</div><div>動画の「どこに何秒使うか」を決めます。勘で作って離脱される状態から抜け出せます。</div>
+    <div className="q">🙋 こんな人向け</div><div>・SNS動画や広告動画を<b>作る担当</b>になった人<br/>・外注先に<b>構成を指示する</b>立場の人<br/>・動画を作っているが<b>最後まで見られない</b>と悩んでいる人</div>
+    <div className="q">📝 やること</div><div>目的・出す場所・長さを選ぶだけ。構成表が自動で出ます。</div>
+  </div></div>);
+}
+
+// 尺と目的から「秒単位の構成」を実計算する
+const PURPOSE={
+  "商品を知ってもらう":{blocks:[["つかみ",12],["課題の提示",18],["商品の紹介",40],["使う場面",20],["次の行動",10]],
+    hook:"視聴者の悩みを一言で言い当てる（例：「毎月の広告費、何に使ったか説明できますか？」）",
+    cta:"詳しくはプロフィールのリンクから"},
+  "使い方を教える":{blocks:[["結論（何ができる様になるか）",10],["準備するもの",10],["手順",55],["よくある失敗",15],["次の行動",10]],
+    hook:"完成形を最初に見せる（できあがりを3秒で提示）",
+    cta:"手順のPDFをコメント欄に置いています"},
+  "申し込んでもらう":{blocks:[["つかみ",10],["共感（あるある）",15],["解決策",30],["証拠・実績",25],["申込の案内",20]],
+    hook:"損している状態を提示する（例：「これ、知らないと年間20万損します」）",
+    cta:"今週中の申込で初期費用無料"},
+  "会社を知ってもらう":{blocks:[["つかみ",10],["何をしている会社か",25],["こだわり・強み",30],["働く人の様子",25],["次の行動",10]],
+    hook:"意外な事実から入る（例：「社員の8割が未経験入社です」）",
+    cta:"採用ページをご覧ください"},
+};
+const PLATFORM={
+  "ショート動画(縦)":{maxSec:60, tip:"最初の1秒で止められます。動きのある画から始めてください。", subtitle:"字幕は必須（音なし視聴が大半）"},
+  "YouTube(横)":{maxSec:600, tip:"最初の15秒で離脱が決まります。結論を先に置いてください。", subtitle:"字幕推奨"},
+  "広告動画":{maxSec:30, tip:"最初の3秒で商品が分からないとスキップされます。", subtitle:"字幕必須・ロゴは早めに"},
+  "社内・研修":{maxSec:900, tip:"章立てを明示すると、後から見返しやすくなります。", subtitle:"章ごとの見出しを入れる"},
+};
+
+function App(){
+  const [purpose,setPurpose]=usePersist("purpose","商品を知ってもらう");
+  const [platform,setPlatform]=usePersist("platform","ショート動画(縦)");
+  const [sec,setSec]=usePersist("sec",60);
+  const [theme,setTheme]=usePersist("theme","広告レポートの自動化サービス");
+  const p=PURPOSE[purpose]||PURPOSE["商品を知ってもらう"];
+  const pf=PLATFORM[platform]||PLATFORM["ショート動画(縦)"];
+  const totalRatio=p.blocks.reduce((a,b)=>a+b[1],0);
+  let acc=0;
+  const plan=p.blocks.map(b=>{
+    const d=Math.max(2,Math.round(sec*b[1]/totalRatio));
+    const start=acc; acc+=d;
+    return {name:b[0], dur:d, start, end:Math.min(acc,sec)};
+  });
+  const overLimit=sec>pf.maxSec;
+  const fmt=s=>{const m=Math.floor(s/60),r=s%60;return (m>0?m+"分":"")+r+"秒";};
+  const maxDur=Math.max(1,...plan.map(x=>x.dur));
+
+  return (<div className="wrap"><DataBar/>
+    <h1>動画構成プランナー</h1>
+    <div className="sub" style={{marginBottom:10}}>動画の目的と尺から、秒単位の構成表を作ります。</div>
+    <Intro/>
+
+    <div className="card">
+      <div className="stepbadge">STEP 1</div>
+      <h2>作りたい動画の条件</h2>
+      <div className="guide">
+        👇 <b>ここを選んでください。</b>目的を変えると、時間の使い方がまるごと変わります。<br/>
+        「知ってもらう」動画と「申し込んでもらう」動画では、力を入れる場所が違うからです。
+      </div>
+      <div style={{marginTop:12,fontSize:14,lineHeight:2.3}}>
+        テーマ：<input className="big" style={{maxWidth:340,display:"inline-block",width:"auto",minWidth:240}}
+          value={theme} onChange={e=>setTheme(e.target.value)}/><br/>
+        目的は
+        <select value={purpose} onChange={e=>setPurpose(e.target.value)}
+          style={{fontSize:15,padding:"7px 10px",border:"1.5px solid #b9cbe4",borderRadius:7,margin:"0 6px"}}>
+          {Object.keys(PURPOSE).map(k=>(<option key={k}>{k}</option>))}</select><br/>
+        出す場所は
+        <select value={platform} onChange={e=>setPlatform(e.target.value)}
+          style={{fontSize:15,padding:"7px 10px",border:"1.5px solid #b9cbe4",borderRadius:7,margin:"0 6px"}}>
+          {Object.keys(PLATFORM).map(k=>(<option key={k}>{k}</option>))}</select>
+        、長さは <input type="number" value={sec} onChange={e=>setSec(Number(e.target.value)||0)}
+          style={{width:80,fontSize:15,padding:"6px",border:"1.5px solid #b9cbe4",borderRadius:7,textAlign:"right"}}/> 秒
+      </div>
+      {overLimit && <div className="verdict vbad" style={{marginTop:10}}>
+        <div className="big">⚠ 長すぎます</div>
+        <div className="desc">{platform}の目安は<b>{pf.maxSec}秒以内</b>です。いまは{sec}秒。
+        伝えたいことを1つに絞るか、複数本に分けてください。</div></div>}
+    </div>
+
+    <div className="card">
+      <div className="stepbadge">STEP 2</div>
+      <h2>構成表（秒単位）</h2>
+      <table><thead><tr><th>時間</th><th className="l">パート</th><th>長さ</th><th className="l">ここで何をするか</th></tr></thead>
+        <tbody>{plan.map((x,i)=>(<tr key={i}>
+          <td><b>{fmt(x.start)}〜{fmt(x.end)}</b></td>
+          <td className="l"><b>{x.name}</b></td>
+          <td>{x.dur}秒</td>
+          <td className="l" style={{fontSize:12.5}}>
+            {i===0?"視聴者を止める。ここで離脱が決まります。":
+             i===plan.length-1?"次の行動をはっきり伝える。":
+             "1パート1メッセージ。詰め込みすぎない。"}</td></tr>))}
+        </tbody></table>
+      <h3>時間の使われ方</h3>
+      {plan.map((x,i)=>(<div key={i}>
+        <div style={{fontSize:13,color:"#445",marginTop:6}}>{x.name}（{x.dur}秒）</div>
+        <div className="bar"><div style={{width:Math.max(8,x.dur/maxDur*100)+"%",background:i===0?"#e0533b":"#c05621"}}>{x.dur}秒</div></div>
+      </div>))}
+      <div className="src">
+        <b>❓ この配分はどう決めているの？</b>
+        <div>・目的ごとに<b>パートの比率</b>を持っており、入力した秒数を比率で割って計算しています（実計算です）。</div>
+        <div>・比率は<b>当社が設定した基準</b>で、公的な研究に基づく数値ではありません。実績を見ながら調整してください。</div>
+        <div>・テーマ欄の文字は構成の計算には使っていません（台本メモ用です）。</div>
+      </div>
+    </div>
+
+    <div className="card">
+      <div className="stepbadge">STEP 3</div>
+      <h2>作るときのポイント</h2>
+      <div className="todo">
+        <b>最初の{plan[0].dur}秒（ここが最重要）</b>
+        <ul>
+          <li>{p.hook}</li>
+          <li>{pf.tip}</li>
+          <li><b>ロゴや挨拶から始めない</b>：「株式会社◯◯です」で始めると、そこで離脱します。</li>
+        </ul>
+      </div>
+      <div className="todo">
+        <b>最後の{plan[plan.length-1].dur}秒（次の行動）</b>
+        <ul>
+          <li>この動画での案内文例：<b>「{p.cta}」</b></li>
+          <li><b>行動は1つだけ</b>にする：「フォローも保存もコメントも」と言うと、どれもされません。</li>
+        </ul>
+      </div>
+      <div className="todo">
+        <b>全体を通して</b>
+        <ul>
+          <li>{pf.subtitle}</li>
+          <li><b>1パート＝1メッセージ</b>：{plan.length}パートあるので、伝えることは{plan.length}個までに絞ってください。</li>
+          <li><b>撮る前にこの表を印刷</b>：秒数を見ながら撮ると、編集がとても楽になります。</li>
+        </ul>
+      </div>
+    </div>
+
+    <p className="note">※構成表は入力した秒数と目的別の比率から計算した目安です。内容そのもの（台本の文章）は生成しません。<br/>
+    ※プラットフォームごとの推奨秒数は一般的な目安であり、各社の公式な規定ではありません。最新の仕様は各プラットフォームでご確認ください。</p>
+  </div>);
+}
+
+</script>
+<script>(function(){var src=document.getElementById("__jsx").textContent;var out=Babel.transform(src,{presets:[["react",{runtime:"classic"}]]}).code;(0,eval)(out);ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));})();</script>
+</body></html>
